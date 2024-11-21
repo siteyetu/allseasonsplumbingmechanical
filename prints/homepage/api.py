@@ -74,4 +74,4 @@ class SlideShowAPI(MethodView):
 		# Create full URLs for each video
 		video_urls = [url_for('static', filename='homepage/video/' + video) for video in videos]
 	
-		return render_template('homepage/slideshow.html', images=image_urls, , videos=video_urls)
+		return render_template('homepage/slideshow.html', images=image_urls,  videos=video_urls)
