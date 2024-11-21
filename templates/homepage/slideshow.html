@@ -78,7 +78,7 @@
         max-width: 1000px;
         margin: 2rem auto;
         position: relative;
-        padding-bottom: 56.25%;
+        padding-bottom: 56.25%; /* 16:9 Aspect Ratio */
         height: 0;
         overflow: hidden;
     }
@@ -122,8 +122,7 @@
 
 <script>
     // Lazy loading of images
-    const images =  {{ images | tojson }};
-
+    const images = {{ images | tojson }};
     const transitions = ['fade-out', 'slide-left', 'slide-right', 'zoom-in', 'flip'];
     let currentSlide = 0;
     const slideshowContainer = document.getElementById('slideshow');
@@ -147,10 +146,10 @@
         const currentElement = slides[currentSlide];
         
         currentElement.classList.remove('active');
-        currentElement.classList.add(transitions[currentSlide]);
+        currentElement.classList.add(transitions[currentSlide % transitions.length]);
         
         setTimeout(() => {
-            currentElement.classList.remove(transitions[currentSlide]);
+            currentElement.classList.remove(transitions[currentSlide % transitions.length]);
             currentSlide = (currentSlide + direction + slides.length) % slides.length;
             slides[currentSlide].classList.add('active');
         }, 800);
@@ -167,106 +166,67 @@
     // Auto advance slideshow
     let slideInterval = setInterval(nextSlide, 5000);
 
+    // YouTube API Integration
     let player;
-        let currentVideoIndex = 0;
-        const videos = {{ videos | tojson }};
+    let currentVideoIndex = 0;
+    const videos = {{ videos | tojson }};
 
-        function onYouTubeIframeAPIReady() {
-            loadVideo(videos[currentVideoIndex]);
-        }
+    function onYouTubeIframeAPIReady() {
+        loadVideo(videos[currentVideoIndex]);
+    }
 
-        function loadVideo(videoUrl) {
-            player = new YT.Player('player', {
-                height: '390',
-                width: '640',
-                videoId: extractVideoId(videoUrl), // Extract the video ID from the URL
-                playerVars: {
-                    'playsinline': 1,
-                    'autoplay': 0,
-                    'controls': 1,
-                    'rel': 0,
-                    'showinfo': 0,
-                    'modestbranding': 1,
-                    'fs': 1,
-                    'cc_load_policy': 1,
-                    'iv_load_policy': 3
-                },
-                events: {
-                    'onReady': onPlayerReady,
-                    'onStateChange': onPlayerStateChange
-                }
-            });
-        }
-
-        function extractVideoId(videoUrl) {
-            const urlParts = videoUrl.split('/');
-            return urlParts[urlParts.length - 1].split('.')[0]; // Assuming video ID is the last part of the URL
-        }
-
-        function onPlayerReady(event) {
-            console.log('Video ready');
-        }
-
-        function onPlayerStateChange(event) {
-            if (event.data === YT.PlayerState.PLAYING) {
-                clearInterval(slideInterval); // Pause slideshow when video is playing
-            } else if (event.data === YT.PlayerState.PAUSED) {
-                slideInterval = setInterval(nextSlide, 5000); // Resume slideshow when video is paused
+    function loadVideo(videoUrl) {
+        player = new YT.Player('player', {
+            height: '390',
+            width: '640',
+            videoId: extractVideoId(videoUrl), // Extract the video ID from the URL
+            playerVars: {
+                'playsinline': 1,
+                'autoplay': 0,
+                'controls': 1,
+                'rel': 0,
+                'showinfo': 0,
+                'modestbranding': 1,
+                'fs': 1,
+                'cc_load_policy': 1,
+                'iv_load_policy': 3
+            },
+            events: {
+                'onReady': onPlayerReady,
+                'onStateChange': onPlayerStateChange
             }
+        });
+    }
+
+    function extractVideoId(videoUrl) {
+        const urlParts = videoUrl.split('/');
+        return urlParts[urlParts.length - 1].split('.')[0]; // Assuming video ID is the last part of the URL
+    }
+
+    function onPlayerReady(event) {
+        console.log('Video ready');
+    }
+
+    function onPlayerStateChange(event) {
+        if (event.data === YT.PlayerState.PLAYING) {
+            clearInterval(slideInterval); // Pause slideshow when video is playing
+        } else if (event.data === YT.PlayerState.PAUSED) {
+            slideInterval = setInterval(nextSlide, 5000); // Resume slideshow when video is paused
         }
+    }
 
-        // Function to go to the next video
-        function nextSlide() {
-            currentVideoIndex = (currentVideoIndex + 1) % videos.length;
-            loadVideo(videos[currentVideoIndex]);
-        }
-        
-    // // YouTube API Integration
-    // let player;
+    // Function to go to the next video
+    function nextVideo() {
+        currentVideoIndex = (currentVideoIndex + 1) % videos.length;
+        loadVideo(videos[currentVideoIndex]);
+    }
 
-    // function onYouTubeIframeAPIReady() {
-    //     player = new YT.Player('player', {
-    //         height: '390',
-    //         width: '640',
-    //         videoId: 'YOUR_VIDEO_ID', // Replace with your video ID
-    //         playerVars: {
-    //             'playsinline': 1,
-    //             'autoplay': 0,
-    //             'controls': 1,
-    //             'rel': 0,
-    //             'showinfo': 0,
-    //             'modestbranding': 1,
-    //             'fs': 1,
-    //             'cc_load_policy': 1,
-    //             'iv_load_policy': 3
-    //         },
-    //         events: {
-    //             'onReady': onPlayerReady,
-    //             'onStateChange': onPlayerStateChange
-    //         }
-    //     });
-    // }
-
-    // function onPlayerReady(event) {
-    //     // Video is ready to play
-    //     console.log('Video ready');
-    // }
-
-    // function onPlayerStateChange(event) {
-    //     // Handle state changes
-    //     if (event.data === YT.PlayerState.PLAYING) {
-    //         clearInterval(slideInterval); // Pause slideshow when video is playing
-    //     } else if (event.data === YT.PlayerState.PAUSED) {
-    //         slideInterval = setInterval(nextSlide, 5000); // Resume slideshow when video is paused
-    //     }
-    // }
-
-    // // Load YouTube API
-    // const tag = document.createElement('script');
-    // tag.src = "https://www.youtube.com/iframe_api";
-    // const firstScriptTag = document.getElementsByTagName('script')[0];
-    // firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
-
+    // Load YouTube API
+    const tag = document.createElement('script');
+    tag.src = "https://www.youtube.com/iframe_api";
+    const firstScriptTag = document.getElementsByTagName('script')[0];
+    firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+    
     // Initialize slideshow
     createSlideshow();
 </script>
