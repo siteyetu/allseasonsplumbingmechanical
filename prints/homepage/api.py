@@ -49,3 +49,9 @@ class AboutUsAPI(MethodView):
 	def get (self):
 		return render_template('homepage/AboutUs.html')
 
+
+
+class SlideShowAPI(MethodView):
+
+	def get (self):
+		return render_template('homepage/slideshow.html')

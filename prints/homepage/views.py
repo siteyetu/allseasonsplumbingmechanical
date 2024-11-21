@@ -25,3 +25,10 @@ aboutus_view = AboutUsAPI.as_view('aboutus_api')
 homepage_app.add_url_rule('/aboutus', 
 	view_func=aboutus_view, 
 	methods=['GET'])
+
+
+slideshow_view = AboutUsAPI.as_view('slideshow_api')
+
+homepage_app.add_url_rule('/slideshow', 
+	view_func=slideshow_view, 
+	methods=['GET'])
