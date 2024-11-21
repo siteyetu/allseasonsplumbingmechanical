@@ -1,8 +1,273 @@
-{% extends "base.html" %}
-
-
+{% extends "homepage/index.html" %}
 
 {% block content %}
+<style>
+    .slideshow-container {
+        max-width: 1000px;
+        position: relative;
+        margin: auto;
+        height: 500px;
+        overflow: hidden;
+    }
 
+    .slide {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        opacity: 0;
+        transition: opacity 0.8s ease-in-out;
+    }
 
-{% endblock  %}
+    .slide.active {
+        opacity: 1;
+    }
+
+    .slide img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    /* Transition Classes */
+    .fade-out {
+        animation: fadeOut 0.8s ease-in-out;
+    }
+
+    .slide-left {
+        animation: slideLeft 0.8s ease-in-out;
+    }
+
+    .slide-right {
+        animation: slideRight 0.8s ease-in-out;
+    }
+
+    .zoom-in {
+        animation: zoomIn 0.8s ease-in-out;
+    }
+
+    .flip {
+        animation: flip 0.8s ease-in-out;
+    }
+
+    @keyframes fadeOut {
+        from { opacity: 1; }
+        to { opacity: 0; }
+    }
+
+    @keyframes slideLeft {
+        from { transform: translateX(0); }
+        to { transform: translateX(-100%); }
+    }
+
+    @keyframes slideRight {
+        from { transform: translateX(0); }
+        to { transform: translateX(100%); }
+    }
+
+    @keyframes zoomIn {
+        from { transform: scale(1); }
+        to { transform: scale(1.2); }
+    }
+
+    @keyframes flip {
+        from { transform: rotateY(0deg); }
+        to { transform: rotateY(180deg); }
+    }
+
+    .video-container {
+        max-width: 1000px;
+        margin: 2rem auto;
+        position: relative;
+        padding-bottom: 56.25%;
+        height: 0;
+        overflow: hidden;
+    }
+
+    .video-container iframe {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+    }
+
+    .navigation {
+        text-align: center;
+        padding: 1rem 0;
+    }
+
+    .nav-btn {
+        cursor: pointer;
+        padding: 8px 16px;
+        margin: 0 5px;
+        background: #333;
+        color: white;
+        border: none;
+        border-radius: 4px;
+    }
+</style>
+
+<div class="slideshow-container">
+    <div id="slideshow"></div>
+</div>
+
+<div class="navigation">
+    <button class="nav-btn" onclick="prevSlide()">Previous</button>
+    <button class="nav-btn" onclick="nextSlide()">Next</button>
+</div>
+
+<div class="video-container">
+    <div id="player"></div>
+</div>
+
+<script>
+    // Lazy loading of images
+    const images =  {{ images | tojson }};
+
+    const transitions = ['fade-out', 'slide-left', 'slide-right', 'zoom-in', 'flip'];
+    let currentSlide = 0;
+    const slideshowContainer = document.getElementById('slideshow');
+
+    function createSlideshow() {
+        images.forEach((src, index) => {
+            const slide = document.createElement('div');
+            slide.className = `slide ${index === 0 ? 'active' : ''}`;
+            
+            const img = new Image();
+            img.src = src;
+            img.loading = 'lazy';
+            
+            slide.appendChild(img);
+            slideshowContainer.appendChild(slide);
+        });
+    }
+
+    function changeSlide(direction) {
+        const slides = document.getElementsByClassName('slide');
+        const currentElement = slides[currentSlide];
+        
+        currentElement.classList.remove('active');
+        currentElement.classList.add(transitions[currentSlide]);
+        
+        setTimeout(() => {
+            currentElement.classList.remove(transitions[currentSlide]);
+            currentSlide = (currentSlide + direction + slides.length) % slides.length;
+            slides[currentSlide].classList.add('active');
+        }, 800);
+    }
+
+    function nextSlide() {
+        changeSlide(1);
+    }
+
+    function prevSlide() {
+        changeSlide(-1);
+    }
+
+    // Auto advance slideshow
+    let slideInterval = setInterval(nextSlide, 5000);
+
+    let player;
+        let currentVideoIndex = 0;
+        const videos = {{ videos | tojson }};
+
+        function onYouTubeIframeAPIReady() {
+            loadVideo(videos[currentVideoIndex]);
+        }
+
+        function loadVideo(videoUrl) {
+            player = new YT.Player('player', {
+                height: '390',
+                width: '640',
+                videoId: extractVideoId(videoUrl), // Extract the video ID from the URL
+                playerVars: {
+                    'playsinline': 1,
+                    'autoplay': 0,
+                    'controls': 1,
+                    'rel': 0,
+                    'showinfo': 0,
+                    'modestbranding': 1,
+                    'fs': 1,
+                    'cc_load_policy': 1,
+                    'iv_load_policy': 3
+                },
+                events: {
+                    'onReady': onPlayerReady,
+                    'onStateChange': onPlayerStateChange
+                }
+            });
+        }
+
+        function extractVideoId(videoUrl) {
+            const urlParts = videoUrl.split('/');
+            return urlParts[urlParts.length - 1].split('.')[0]; // Assuming video ID is the last part of the URL
+        }
+
+        function onPlayerReady(event) {
+            console.log('Video ready');
+        }
+
+        function onPlayerStateChange(event) {
+            if (event.data === YT.PlayerState.PLAYING) {
+                clearInterval(slideInterval); // Pause slideshow when video is playing
+            } else if (event.data === YT.PlayerState.PAUSED) {
+                slideInterval = setInterval(nextSlide, 5000); // Resume slideshow when video is paused
+            }
+        }
+
+        // Function to go to the next video
+        function nextSlide() {
+            currentVideoIndex = (currentVideoIndex + 1) % videos.length;
+            loadVideo(videos[currentVideoIndex]);
+        }
+        
+    // // YouTube API Integration
+    // let player;
+
+    // function onYouTubeIframeAPIReady() {
+    //     player = new YT.Player('player', {
+    //         height: '390',
+    //         width: '640',
+    //         videoId: 'YOUR_VIDEO_ID', // Replace with your video ID
+    //         playerVars: {
+    //             'playsinline': 1,
+    //             'autoplay': 0,
+    //             'controls': 1,
+    //             'rel': 0,
+    //             'showinfo': 0,
+    //             'modestbranding': 1,
+    //             'fs': 1,
+    //             'cc_load_policy': 1,
+    //             'iv_load_policy': 3
+    //         },
+    //         events: {
+    //             'onReady': onPlayerReady,
+    //             'onStateChange': onPlayerStateChange
+    //         }
+    //     });
+    // }
+
+    // function onPlayerReady(event) {
+    //     // Video is ready to play
+    //     console.log('Video ready');
+    // }
+
+    // function onPlayerStateChange(event) {
+    //     // Handle state changes
+    //     if (event.data === YT.PlayerState.PLAYING) {
+    //         clearInterval(slideInterval); // Pause slideshow when video is playing
+    //     } else if (event.data === YT.PlayerState.PAUSED) {
+    //         slideInterval = setInterval(nextSlide, 5000); // Resume slideshow when video is paused
+    //     }
+    // }
+
+    // // Load YouTube API
+    // const tag = document.createElement('script');
+    // tag.src = "https://www.youtube.com/iframe_api";
+    // const firstScriptTag = document.getElementsByTagName('script')[0];
+    // firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+    // Initialize slideshow
+    createSlideshow();
+</script>
+{% endblock %}

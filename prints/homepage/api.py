@@ -54,4 +54,24 @@ class AboutUsAPI(MethodView):
 class SlideShowAPI(MethodView):
 
 	def get (self):
-		return render_template('homepage/slideshow.html')
+		# Specify the directory containing the images
+		image_folder = 'static/homepage/slideshowimg'
+		
+		# Get a list of all jpg files in the directory
+		images = [f for f in os.listdir(image_folder) if f.lower().endswith(('.jpg', '.jpeg'))]
+		
+		# Create full URLs for each image
+		image_urls = [f"{url_for('static', filename='homepage/slideshowimg/' + img)}" for img in images]
+
+
+
+		# Specify the directory containing the videos
+		video_folder = 'static/homepage/video'
+		
+		# Get a list of all video files in the directory
+		videos = [f for f in os.listdir(video_folder) if f.lower().endswith(('.mp4', '.avi', '.mov', '.mkv'))]
+		
+		# Create full URLs for each video
+		video_urls = [url_for('static', filename='homepage/video/' + video) for video in videos]
+	
+		return render_template('homepage/slideshow.html', images=image_urls, , videos=video_urls)
