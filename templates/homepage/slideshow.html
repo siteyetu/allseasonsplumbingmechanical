@@ -171,8 +171,8 @@
             async loadContent() {
                 try {
                     const [imageResponse, videoResponse] = await Promise.all([
-                        fetch('/static/homepage/slideimg'),
-                        fetch('/static/slideshow/video')
+                        fetch('/static/homepage/slideshowimg'),
+                        fetch('/static/homepage/video')
                     ]);
 
                     const [images, videos] = await Promise.all([
@@ -183,11 +183,11 @@
                     this.slides = [
                         ...images.map(img => ({ 
                             type: 'image', 
-                            src: `/static/homepage/slideimg/${img}` 
+                            src: `/static/homepage/slideshowimg/${img}` 
                         })),
                         ...videos.map(video => ({ 
                             type: 'video', 
-                            src: `/static/slideshow/video/${video}` 
+                            src: `/static/homepage/video/${video}` 
                         }))
                     ];
 
@@ -271,7 +271,7 @@
 
             async loadVideos() {
                 try {
-                    const response = await fetch('/static/slideshow/video');
+                    const response = await fetch('/static/homepage/video');
                     this.videoIds = await response.json();
                     this.initializeYouTubePlayer();
                 } catch (error) {
