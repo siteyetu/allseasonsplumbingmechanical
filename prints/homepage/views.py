@@ -27,7 +27,7 @@ homepage_app.add_url_rule('/aboutus',
 	methods=['GET'])
 
 
-slideshow_view = AboutUsAPI.as_view('slideshow_api')
+slideshow_view = SlideShowAPI.as_view('slideshow_api')
 
 homepage_app.add_url_rule('/slideshow', 
 	view_func=slideshow_view, 
