@@ -2,7 +2,11 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{url_for('static', filename='homepage/aboutUs/icons-font.css')}}">
+    <link rel="stylesheet" href="{{url_for('static', filename='homepage/style.css')}}">
+    <title>ALL SEASONS PLUMBING AND MECHANICAL SOLUTIONS</title>
     <style>
         .slideshow-container {
             max-width: 1000px;
@@ -137,6 +141,16 @@
             color: #ff0000;
             padding: 20px;
         }
+
+        @media screen and (max-width: 768px) {
+            .slideshow-container {
+                height: 300px;
+            }
+            
+            .video-container {
+                max-width: 100%;
+            }
+        }
     </style>
 </head>
 <body>
@@ -166,10 +180,9 @@
 
             async loadContent() {
                 try {
-                    // Use Flask's static file structure
                     const images = ['{{ url_for("static", filename="homepage/slideshowimg/IMG-20241113-WA0000.jpg") }}', 
                                  '{{ url_for("static", filename="homepage/slideshowimg/IMG-20241113-WA0002.jpg") }}'];
-                    const videos = ['{{ url_for("static", filename="homepage/video/VID-20241113-WA0001.mp4") }}'];
+                    const videos = ['{{ url_for("static", filename="homepage/video/VID-20241113-WA0001.mp4") }}', '{{ url_for("static", filename="homepage/video/VID-20241113-WA0007.mp4") }}'];
 
                     this.slides = [
                         ...images.map(img => ({ type: 'image', src: img })),
