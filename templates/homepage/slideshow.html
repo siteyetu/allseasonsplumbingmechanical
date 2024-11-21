@@ -10,11 +10,6 @@
             margin: auto;
             height: 500px;
             overflow: hidden;
-            opacity: 0;
-            transition: opacity 0.3s ease-in-out;
-        }
-
-        .slideshow-container.loaded {
             opacity: 1;
         }
 
@@ -38,7 +33,6 @@
             object-fit: cover;
         }
 
-        /* Enhanced transitions */
         .fade { 
             animation: fade 0.8s;
         }
@@ -108,11 +102,6 @@
             padding-bottom: 56.25%;
             height: 0;
             overflow: hidden;
-            opacity: 0;
-            transition: opacity 0.3s ease-in-out;
-        }
-
-        .video-container.loaded {
             opacity: 1;
         }
 
@@ -135,11 +124,18 @@
             border-top: 5px solid #3498db;
             border-radius: 50%;
             animation: spin 1s linear infinite;
+            z-index: 1000;
         }
 
         @keyframes spin {
             0% { transform: translate(-50%, -50%) rotate(0deg); }
             100% { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+
+        .error-message {
+            text-align: center;
+            color: #ff0000;
+            padding: 20px;
         }
     </style>
 </head>
@@ -164,87 +160,75 @@
                 this.slideIndex = 0;
                 this.slides = [];
                 this.transitions = ['fade', 'slide-left', 'slide-right', 'zoom', 'flip', 'rotate', 'scale'];
-                this.isLoading = true;
                 this.container = document.querySelector('.slideshow-container');
+                this.isInitialized = false;
             }
 
             async loadContent() {
                 try {
-                    const [imageResponse, videoResponse] = await Promise.all([
-                        fetch('/static/homepage/slideshowimg'),
-                        fetch('/static/homepage/video')
-                    ]);
-
-                    const [images, videos] = await Promise.all([
-                        imageResponse.json(),
-                        videoResponse.json()
-                    ]);
+                    // Use Flask's static file structure
+                    const images = ['{{ url_for("static", filename="homepage/slideshowimg/IMG-20241113-WA0000.jpg") }}', 
+                                 '{{ url_for("static", filename="homepage/slideshowimg/IMG-20241113-WA0002.jpg") }}'];
+                    const videos = ['{{ url_for("static", filename="homepage/video/VID-20241113-WA0001.mp4") }}'];
 
                     this.slides = [
-                        ...images.map(img => ({ 
-                            type: 'image', 
-                            src: `/static/homepage/slideshowimg/${img}` 
-                        })),
-                        ...videos.map(video => ({ 
-                            type: 'video', 
-                            src: `/static/homepage/video/${video}` 
-                        }))
+                        ...images.map(img => ({ type: 'image', src: img })),
+                        ...videos.map(video => ({ type: 'video', src: video }))
                     ];
 
                     await this.initializeSlideshow();
-                    this.container.classList.add('loaded');
                     this.container.querySelector('.loading-spinner').remove();
                     this.showSlides();
                 } catch (error) {
                     console.error('Error loading slideshow content:', error);
-                    this.container.innerHTML = '<p>Error loading slideshow content</p>';
+                    this.container.innerHTML = '<div class="error-message">Error loading slideshow content</div>';
                 }
             }
 
             async initializeSlideshow() {
+                if (this.isInitialized) return;
+                
                 const container = document.getElementById('slideshow');
-                const loadPromises = this.slides.map(async (slide, index) => {
+                for (const slide of this.slides) {
                     const slideDiv = document.createElement('div');
                     slideDiv.className = 'slide';
                     
-                    if (slide.type === 'image') {
-                        const img = document.createElement('img');
-                        img.src = slide.src;
-                        img.loading = 'lazy';
-                        await new Promise((resolve, reject) => {
-                            img.onload = resolve;
-                            img.onerror = reject;
-                        });
-                        slideDiv.appendChild(img);
-                    } else {
-                        const video = document.createElement('video');
-                        video.src = slide.src;
-                        video.autoplay = true;
-                        video.muted = true;
-                        video.loading = 'lazy';
-                        video.loop = true;
-                        await new Promise((resolve, reject) => {
-                            video.onloadeddata = resolve;
-                            video.onerror = reject;
-                        });
-                        slideDiv.appendChild(video);
+                    try {
+                        if (slide.type === 'image') {
+                            const img = document.createElement('img');
+                            img.src = slide.src;
+                            img.loading = 'lazy';
+                            slideDiv.appendChild(img);
+                        } else {
+                            const video = document.createElement('video');
+                            video.src = slide.src;
+                            video.autoplay = true;
+                            video.muted = true;
+                            video.loading = 'lazy';
+                            video.loop = true;
+                            slideDiv.appendChild(video);
+                        }
+                        container.appendChild(slideDiv);
+                    } catch (error) {
+                        console.error(`Error loading ${slide.type}:`, error);
                     }
-                    
-                    container.appendChild(slideDiv);
-                });
-
-                await Promise.all(loadPromises);
+                }
+                
+                this.isInitialized = true;
             }
 
             showSlides() {
+                if (!this.isInitialized) return;
+
                 const slides = document.getElementsByClassName('slide');
+                if (slides.length === 0) return;
                 
-                for (let i = 0; i < slides.length; i++) {
-                    slides[i].classList.remove('active');
-                    slides[i].className = slides[i].className.replace(
-                        new RegExp(this.transitions.join('|')), ''
-                    );
-                }
+                Array.from(slides).forEach(slide => {
+                    slide.classList.remove('active');
+                    this.transitions.forEach(transition => {
+                        slide.classList.remove(transition);
+                    });
+                });
 
                 const currentSlide = slides[this.slideIndex];
                 const randomTransition = this.transitions[
@@ -253,8 +237,9 @@
 
                 currentSlide.classList.add('active', randomTransition);
 
-                if (currentSlide.querySelector('video')) {
-                    currentSlide.querySelector('video').play();
+                const video = currentSlide.querySelector('video');
+                if (video) {
+                    video.play().catch(e => console.warn('Video autoplay failed:', e));
                 }
 
                 this.slideIndex = (this.slideIndex + 1) % slides.length;
@@ -267,50 +252,52 @@
                 this.container = document.querySelector('.video-container');
                 this.videoIds = [];
                 this.currentVideoIndex = 0;
+                this.isInitialized = false;
             }
 
             async loadVideos() {
                 try {
-                    const response = await fetch('/static/homepage/video');
-                    this.videoIds = await response.json();
-                    this.initializeYouTubePlayer();
+                    this.videoIds = ['dQw4w9WgXcQ'];
+                    await this.initializeYouTubePlayer();
                 } catch (error) {
                     console.error('Error loading video content:', error);
-                    this.container.innerHTML = '<p>Error loading video content</p>';
+                    this.container.innerHTML = '<div class="error-message">Error loading video content</div>';
                 }
             }
 
-            initializeYouTubePlayer() {
-                if (!this.videoIds.length) return;
+            async initializeYouTubePlayer() {
+                if (!this.videoIds.length || this.isInitialized) return;
 
-                const tag = document.createElement('script');
-                tag.src = "https://www.youtube.com/iframe_api";
-                const firstScriptTag = document.getElementsByTagName('script')[0];
-                firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
-
-                window.onYouTubeIframeAPIReady = () => {
-                    this.player = new YT.Player('player', {
-                        height: '360',
-                        width: '640',
-                        videoId: this.videoIds[0],
-                        playerVars: {
-                            'autoplay': 0,
-                            'controls': 1,
-                            'rel': 0,
-                            'modestbranding': 1
-                        },
-                        events: {
-                            'onReady': () => {
-                                this.container.classList.add('loaded');
-                                this.container.querySelector('.loading-spinner').remove();
+                return new Promise((resolve) => {
+                    window.onYouTubeIframeAPIReady = () => {
+                        this.player = new YT.Player('player', {
+                            height: '360',
+                            width: '640',
+                            videoId: this.videoIds[0],
+                            playerVars: {
+                                'autoplay': 0,
+                                'controls': 1,
+                                'rel': 0,
+                                'modestbranding': 1
+                            },
+                            events: {
+                                'onReady': () => {
+                                    this.container.querySelector('.loading-spinner').remove();
+                                    this.isInitialized = true;
+                                    resolve();
+                                }
                             }
-                        }
-                    });
-                };
+                        });
+                    };
+
+                    const tag = document.createElement('script');
+                    tag.src = "https://www.youtube.com/iframe_api";
+                    const firstScriptTag = document.getElementsByTagName('script')[0];
+                    firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+                });
             }
         }
 
-        // Initialize components when they enter viewport
         const observer = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
                 if (entry.isIntersecting) {
